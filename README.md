@@ -4,6 +4,8 @@
 
 ## What is this?
 
+Made by **Kushagra Singh**
+
 HealthBridge is a full-stack web application that acts as your personal health record assistant. Upload your medical documents—prescriptions, lab results, doctor's notes, even medical images—and our AI will analyze them to give you a clear, concise summary of what you need to know.
 
 No more deciphering medical jargon or trying to remember what the doctor said. HealthBridge makes it easy to understand and manage your health information.
