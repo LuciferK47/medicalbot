@@ -1,24 +1,52 @@
-import React from 'react';
-import { GoogleLogin } from '@react-oauth/google';
-import { useAuth } from '../context/AuthContext';
-import apiClient from '../api/apiClient';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 const HomePage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
-    try {
-      const res = await apiClient.post('/auth/google/callback', {
-        token: credentialResponse.credential,
+  useEffect(() => {
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: '602455909378-gl04pqgpg68c559757rcvujdn9800iq8.apps.googleusercontent.com',
+        callback: handleCredentialResponse,
       });
-      const { token, user } = res.data;
-      login(user, token);
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Google login failed:', error);
+
+      window.google.accounts.id.renderButton(
+        document.getElementById('googleSignInDiv'),
+        {
+          theme: 'filled_black',
+          size: 'large',
+          shape: 'pill',
+        }
+      );
     }
+  }, []);
+
+  const handleCredentialResponse = (response: any) => {
+    const user = parseJwt(response.credential);
+    console.log('🧠 Google JWT user:', user);
+    login(user, response.credential);
+    navigate('/dashboard');
+  };
+
+  const parseJwt = (token: string) => {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
   };
 
   return (
@@ -30,17 +58,7 @@ const HomePage: React.FC = () => {
         <p className="text-xl text-gray-300 mb-8">
           Your AI-Powered Personal Health Record Assistant
         </p>
-        <div className="flex justify-center">
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={() => {
-              console.log('Login Failed');
-            }}
-            theme="filled_black"
-            size="large"
-            shape="pill"
-          />
-        </div>
+        <div id="googleSignInDiv" className="flex justify-center" />
       </div>
       <footer className="absolute bottom-4 text-gray-500 text-sm">
         &copy; {new Date().getFullYear()} HealthBridge. All Rights Reserved.

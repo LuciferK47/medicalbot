@@ -1,9 +1,9 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 
 interface User {
-  id: string;
   name: string;
   email: string;
+  picture?: string; // For Google profile picture
 }
 
 interface AuthContextType {
@@ -20,25 +20,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   useEffect(() => {
+    const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
-    if (token) {
-      // In a real app, you'd verify the token with the backend and get user info
-      // For this example, we'll just assume the token is valid
-      // and we'd need to fetch the user data.
-      // For now, we'll just set isAuthenticated to true if a token exists.
-      setIsAuthenticated(true);
+
+    if (storedUser && token) {
+      try {
+        const parsedUser = JSON.parse(storedUser) as User;
+        setUser(parsedUser);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error("❌ Failed to parse stored user:", error);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      }
     }
   }, []);
 
   const login = (userData: User, token: string) => {
     setUser(userData);
     setIsAuthenticated(true);
+    localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('token', token);
   };
 
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
+    localStorage.removeItem('user');
     localStorage.removeItem('token');
   };
 
@@ -49,9 +57,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
